@@ -1,6 +1,6 @@
 import numpy as np
 
-numbers_list = [10, 20, 30, 40, 50]
+numbers_list = [11, 56, 80, 39, 56]
 
 numbers_array = np.array(numbers_list)
 
