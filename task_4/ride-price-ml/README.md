@@ -4,7 +4,7 @@
 
 This mini project builds an end-to-end **machine learning system to estimate ride prices** based on trip and contextual information, similar to a taxi or ride-hailing platform.
 
-The main notebook is:-
+The main notebook is:
 
 - `notebook/ride_price_model.ipynb`
 
