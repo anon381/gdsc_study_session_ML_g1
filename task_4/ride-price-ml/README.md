@@ -1,114 +1,96 @@
 # Ride Price Estimation System
 
+![Python Model Pipeline](https://img.shields.io/badge/Pipeline-Scikit--Learn-orange)
+![Data](https://img.shields.io/badge/Dataset-Synthetic%20(15k)-lightgrey)
+![Status](https://img.shields.io/badge/Status-Completed-success)
+
 ## Project Overview
 
-This mini project builds an end-to-end **machine learning system to estimate ride prices** based on trip and contextual information, similar to a taxi or ride-hailing platform.
+This project builds an end-to-end **machine learning system to estimate ride prices** based on trip and contextual information, similar to a taxi or ride-hailing platform like Uber or Lyft. 
 
-The main notebook is:
+This repository was specifically structured to demonstrate **Data Science & ML Engineering best practices** including modularized code, serialized models, and pipeline-based data preprocessing.
 
-- `notebook/ride_price_model.ipynb`
+### Key Learnings Demonstrated:
+- **Data Preprocessing Pipelines:** Using `StandardScaler` and `OneHotEncoder` via `ColumnTransformer` to prevent data leakage.
+- **Advanced Regression:** Moving from a baseline `LinearRegression` model to an ensemble `RandomForestRegressor`.
+- **Classification Modeling:** Implementing a `LogisticRegression` model to classify rides into "High Cost" vs "Low Cost".
+- **Script Modularization:** Structuring ML code into reusable `.py` scripts (`train.py`, `predict.py`) instead of keeping everything in Jupyter notebooks.
+- **Model Serialization:** Using `joblib` to save and load models for inference without retraining.
 
-The notebook walks through:
-
-- Problem framing and ML mindset  
-- Synthetic dataset design and feature justification  
-- Data exploration and cleaning  
-- Regression model for price prediction  
-- Classification model for high-cost vs low-cost rides  
-- Model evaluation, feature importance, and ethical reflection  
+---
 
 ## Dataset Description
 
-- Location: `data/rides.csv`  
-- Rows: 600 synthetic rides (I can change this number by changing the generator)  
-- Target (continuous): `ride_price` — final ride price in an arbitrary currency.
+- **Source:** Generated via custom simulation logic (`generate_rides.py`) 
+- **Rows:** 15,000 rides
+- **Target (continuous):** `ride_price` (Regression Target)
+- **Target (binary):** `high_cost` (Classification Target, `ride_price > median`)
 
-I **created this dataset myself** using the code in this project (see `generate_rides.py` and the notebook).  
-It is not downloaded or copied from any external dataset.
+### Features
+1. `distance_km`: Trip distance (core pricing driver).
+2. `duration_min`: Trip duration (time-based pricing under traffic).
+3. `time_of_day`: `morning`, `afternoon`, `evening`, `night` (Peak hours pricing).
+4. `traffic_level`: `low`, `medium`, `high` (Traffic delays).
+5. `weather`: `clear`, `rainy`, `stormy` (Adverse conditions surcharge).
+6. `demand_level`: `low`, `normal`, `high` (Surge pricing).
+7. `pickup_zone`: `city_center`, `suburbs`, `airport` (Airport/Congestion fixed fees).
 
-### Features Used and Justification
+---
 
-1. `distance_km` (numeric)  
-   - Distance of the trip in kilometers. Longer trips usually cost more, so this is a core pricing driver.
+## Model Evaluation & Performance
 
-2. `duration_min` (numeric)  
-   - Trip duration in minutes. Captures time-based pricing (e.g., waiting in traffic or slow routes).
+We evaluate multiple models. The **Random Forest Regressor** outperforms Linear Regression by capturing non-linear relationships such as the interaction between high demand and severe weather.
 
-3. `time_of_day` (categorical: `morning`, `afternoon`, `evening`, `night`)  
-   - Models peak vs off-peak pricing; morning and evening rush hours often have higher prices.
+### 1. Regression: Random Forest vs. Linear Regression
+The Random Forest model tightens the prediction variance significantly.
 
-4. `traffic_level` (categorical: `low`, `medium`, `high`)  
-   - Higher traffic can increase travel time and sometimes introduce congestion charges.
+| Model | RMSE | R² Score |
+|-------|------|----------|
+| Linear Regression | ~2.00 | ~0.94 |
+| Random Forest Regressor | **~1.05** | **~0.98** |
 
-5. `weather` (categorical: `clear`, `rainy`, `stormy`)  
-   - Bad weather can increase risk and slow down traffic, which can be reflected in higher prices.
+![RF Actual vs Predicted](plots/rf_actual_vs_predicted.png)
 
-6. `demand_level` (categorical: `low`, `normal`, `high`)  
-   - Simulates surge pricing when many passengers are requesting rides at the same time.
+### 2. Feature Importance
+Using the Random Forest model, we can deduce which features drive the fare algorithm the most. `distance_km` strongly dominates, followed by `duration_min` and `demand_level_high` (surge pricing).
 
-7. `pickup_zone` (categorical: `city_center`, `suburbs`, `airport`)  
-   - Some zones, especially airports or busy city centers, often have extra surcharges or higher base fares.
+![RF Feature Importance](plots/rf_feature_importance.png)
 
-**Excluded feature (for justification):**
+### 3. Classification: High vs Low Cost
+We built a Logistic Regression model to identify whether a ride will be above or below the median cost of the area.
 
-- `driver_rating` (1–5 stars) was considered but **not** included. Ratings can be subjective and biased, and using them directly for pricing might unfairly charge more to or for certain drivers/passengers. For this educational project, it is safer to exclude rating-based pricing.
+![Classification Confusion Matrix](plots/clf_confusion_matrix.png)
 
-## How to Run the Notebook
+---
 
-### Option 1: Local (Python)
+## How to Run
 
-1. Clone the repository and move into the project:
+### 1. Installation 
+Clone the repository and set up a virtual environment:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-   ```bash
-   git clone <your-repo-url>.git
-   cd ride-price-ml
-   ```
+### 2. Generate the Dataset
+Create the 15,000 synthetic ride dataset:
+```bash
+python generate_rides.py
+```
 
-2. (Optional) Create and activate a virtual environment:
+### 3. Train the Models
+Run the training pipeline. This script will preprocess the data, train LR, RF, and Classifier models, output evaluation metrics, generate evaluation plots in `/plots`, and serialize the models to `/models`.
+```bash
+python src/train.py
+```
 
-   ```bash
-   python -m venv .venv
-   .\.venv\Scripts\activate
-   ```
+### 4. Run an Inference Prediction
+Use the `predict.py` script to estimate a single ride using the trained Random Forest model. 
+```bash
+python src/predict.py --distance 12.5 --duration 30 --weather stormy --demand high
+```
 
-3. Install dependencies:
-
-   ```bash
-   pip install numpy pandas matplotlib seaborn scikit-learn jupyter
-   ```
-
-4. Make sure the dataset exists (if needed, regenerate):
-
-   ```bash
-   python generate_rides.py
-   ```
-
-   This creates/overwrites `data/rides.csv`.
-
-5. Launch Jupyter Notebook:
-
-   ```bash
-   jupyter notebook
-   ```
-
-6. Open `notebook/ride_price_model.ipynb` and run all cells.
-
-### Option 2: Google Colab
-
-1. Upload the `ride-price-ml` folder (or at least `notebook/ride_price_model.ipynb` and `data/rides.csv`) to your Drive or Colab workspace.
-2. Open `notebook/ride_price_model.ipynb` in Colab.
-3. Make sure the path to the CSV is correct (for example, `../data/rides.csv` if the notebook is in `notebook/`).
-4. Run all cells (Runtime → Run all).
-
-## Key Findings (Summary)
-
-- **Regression:** A Linear Regression model can learn the synthetic pricing rule, with ride price increasing mainly with `distance_km` and `duration_min`, and adjusted by demand, traffic, time of day, weather, and pickup zone.
-- **Classification:** A Logistic Regression model can classify rides into **high-cost** vs **low-cost** using the same features with reasonable accuracy, based on a median price threshold.
-- **Most influential feature:** Distance (`distance_km`) is typically the most important feature in the regression model, with duration and high-demand/peak-time indicators also contributing.
-- **Data quality:** Handling missing values, encoding categorical variables correctly, and scaling numerical features are all important for stable model performance, especially when moving from synthetic data to real-world data.
-
-## Notes and Limitations
-
-- The dataset is **synthetic** and relatively small, so it does not capture all real-world complexity (holidays, events, different cities, etc.).
-- Real deployment would require much larger and real data, careful monitoring, and fairness considerations to avoid unfair pricing behavior.
-
+## Future Work & Ethical Considerations
+- **Driver History vs Fairness:** We intentionally excluded features like `driver_rating` or `passenger_rating` to prevent biased or discriminatory algorithmic pricing.
+- **Real-world Deployment:** To scale this, the saved `.joblib` model would ideally be wrapped in a Fast-API docker container and exposed over a REST endpoint.

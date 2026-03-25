@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 
-def generate_rides(n_samples: int = 600, random_state: int = 42) -> pd.DataFrame:
+def generate_rides(n_samples: int = 15000, random_state: int = 42) -> pd.DataFrame:
     """
     Generate a synthetic ride dataset consistent with the notebook description.
     """
